@@ -5,6 +5,7 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
     :root{color-scheme:dark;--bg:#101813;--panel:#19231d;--line:#35443a;--text:#f1f5ee;--muted:#a4b2a7;--green:#a6e56f;--red:#ff8e83}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 86% 0%,#263d2e 0,transparent 34%),var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}.shell{width:min(980px,calc(100% - 36px));margin:auto}.top{height:78px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between}.brand{font:700 17px 'Space Grotesk',sans-serif;display:flex;align-items:center;gap:10px}.mark{width:34px;height:34px;border-radius:11px;background:var(--green);color:#152118;display:grid;place-items:center}.top a{color:var(--muted);text-decoration:none;font-size:13px}.intro{padding:42px 0 25px}.eyebrow{color:var(--green);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.intro h1{font:700 38px 'Space Grotesk',sans-serif;letter-spacing:-1.5px;margin:10px 0}.intro p{color:var(--muted);margin:0;font-size:14px}.card{background:linear-gradient(145deg,#1d2921,#18211b);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}.card h2{font:600 19px 'Space Grotesk',sans-serif;margin:0}.desc{font-size:13px;color:var(--muted);margin:7px 0 18px;line-height:1.5}label{display:block;font-weight:600;font-size:13px;margin:14px 0 8px}input,textarea{width:100%;background:#121a15;border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;padding:12px;outline:none}input:focus,textarea:focus{border-color:var(--green)}input{height:45px}textarea{min-height:120px;resize:vertical;line-height:1.6}button{background:var(--green);color:#172319;border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer;font:600 13px 'DM Sans',sans-serif}button:hover{filter:brightness(1.07)}button:disabled{opacity:.55;cursor:wait}.secondary{background:#26332a;color:var(--text);border:1px solid var(--line)}.danger{background:#ff8e8317;color:#ffc1ba;border:1px solid #ff8e8342}.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:13px}.notice{font-size:12px;margin:11px 0 0;color:var(--muted);min-height:17px}.notice.error{color:#ffaaa1}.notice.ok{color:#bce997}.login-card{max-width:440px;margin:35px auto}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.candidate-edit{display:grid;grid-template-columns:1.1fr 1fr auto;gap:8px;align-items:center;margin-bottom:9px}.candidate-edit input{min-width:0}.candidate-edit button{height:42px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px}.stat{background:#ffffff08;border:1px solid #ffffff10;border-radius:11px;padding:14px}.stat-num{font:700 25px 'Space Grotesk',sans-serif;color:var(--green)}.stat-label{font-size:11px;color:var(--muted);margin-top:4px}.code-list{background:#111912;border:1px solid var(--line);padding:14px;border-radius:10px;margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}.code{background:#202d23;border:1px solid #344838;color:#c9f3ac;border-radius:7px;padding:8px;font:600 12px ui-monospace,monospace;text-align:center;letter-spacing:1px}.results{display:grid;gap:8px}.result{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:#111912;border:1px solid #ffffff0d;border-radius:9px;padding:11px}.num{color:var(--green);font-weight:700}.result-name{font-weight:600;font-size:13px}.party{font-size:11px;color:var(--muted);margin-top:3px}.votes{font-size:13px;font-weight:700}.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.candidate-edit{grid-template-columns:1fr 1fr}.candidate-edit button{grid-column:span 2}.card{padding:19px}.intro h1{font-size:32px}}
+    .runoff-results{display:grid;gap:8px;margin:14px 0}.runoff-edit{display:grid;grid-template-columns:1fr 1fr;gap:12px}.runoff-edit label{margin:0}.runoff-state{font-size:12px;color:var(--muted);margin-top:12px}.runoff-winner{color:var(--green);font-weight:700}
   </style>
 </head>
 <body><div class="shell">
@@ -18,7 +19,7 @@
       <section class="card"><h2>Spelerslijst</h2><p class="desc">Eén Minecraft-naam per regel. Alleen deze namen kunnen stemmen.</p><label for="players">Spelers</label><textarea id="players" placeholder="Steve\nAlex\nCreeper123"></textarea><div class="actions"><button id="save-players">Spelers opslaan</button></div><div id="players-message" class="notice" role="status"></div></section>
       <section class="card"><h2>Kandidaten</h2><p class="desc">Stel hier de kandidaten voor de komende ronde om de week in. Werk deze lijst bij als er nieuwe mensen meedoen; eerdere uitslagen blijven bewaard.</p><div id="candidate-list"></div><div class="actions"><button class="secondary" id="add-candidate">+ Kandidaat toevoegen</button><button id="save-candidates">Kandidaten opslaan</button></div><div id="candidates-message" class="notice" role="status"></div></section>
     </div>
-    <section class="card"><h2>Uitslag</h2><p class="desc">De top 3 vormen de kamer die de straffen bedenkt.</p><div id="admin-results" class="results"></div><div class="actions"><button id="refresh" class="secondary">Ververs uitslag</button><button id="download">Download CSV</button></div><div id="results-message" class="notice" role="status"></div><p class="note">Stemmen zijn openbaar zichtbaar op de startpagina. Iedere speler kan maximaal één stem per ronde uitbrengen; stemmen is vrijwillig. Het beheerderswachtwoord beschermt deze pagina.</p></section>
+    <section class="card"><h2>Uitslag</h2><p class="desc">De top 3 vormen de kamer die de straffen bedenkt.</p><div id="admin-results" class="results"></div><div id="runoff-admin" class="hidden" style="border-top:1px solid var(--line);margin-top:20px;padding-top:20px"><h2>Extra verkiezing voor plek 3</h2><p id="runoff-first-two" class="desc"></p><div id="runoff-admin-results" class="runoff-results"></div><div id="runoff-winner" class="runoff-winner"></div><div class="runoff-edit"><label for="runoff-opens">Startdatum en tijd<input id="runoff-opens" type="datetime-local"></label><label for="runoff-closes">Einddatum en tijd<input id="runoff-closes" type="datetime-local"></label></div><div class="actions"><button id="save-runoff-schedule">Tijden opslaan</button></div><div id="runoff-message" class="notice" role="status"></div><div id="runoff-state" class="runoff-state"></div></div><div class="actions"><button id="refresh" class="secondary">Ververs uitslag</button><button id="download">Download CSV</button></div><div id="results-message" class="notice" role="status"></div><p class="note">Stemmen zijn openbaar zichtbaar op de startpagina. Iedere speler kan maximaal één stem per ronde uitbrengen; stemmen is vrijwillig. Het beheerderswachtwoord beschermt deze pagina.</p></section>
   </main>
 </div>
 <script>
@@ -32,6 +33,11 @@
     return data;
   }
   function showMessage(selector, text, isError = false) { const el = $(selector); el.textContent = text; el.className = `notice ${text ? (isError ? 'error' : 'ok') : ''}`; }
+  function localDateTimeValue(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
   function addCandidate(name = '', party = '') {
     const row = document.createElement('div');
     row.className = 'candidate-edit';
@@ -53,6 +59,20 @@
         : !data.election.resultsVisible
           ? `Stemmen gesloten · uitslag volgt ${electionDate}`
           : `Uitslag bekend ${electionDate} · volgende stemming opent ${nextOpensDate}`;
+
+    const runoff = data.election.runoff;
+    const runoffPanel = $('#runoff-admin');
+    runoffPanel.classList.toggle('hidden', !runoff);
+    if (runoff) {
+      $('#runoff-first-two').textContent = `Vaste eerste twee: ${runoff.firstTwo.map(player => player.name).join(' en ')}. Extra stemming: ${runoff.phase === 'open' ? 'open' : runoff.phase === 'scheduled' ? 'gepland' : 'gesloten'} · ${runoff.total} stemmen.`;
+      $('#runoff-opens').value = localDateTimeValue(runoff.opensAt);
+      $('#runoff-closes').value = localDateTimeValue(runoff.closesAt);
+      $('#runoff-admin-results').innerHTML = runoff.results.length
+        ? runoff.results.map((item, index) => `<div class="result"><div class="num">${String(index + 1).padStart(2, '0')}</div><div><div class="result-name">${escapeHtml(item.name)}</div><div class="party">${escapeHtml(item.party || 'Onafhankelijk')}</div></div><div class="votes">${item.votes} ${item.votes === 1 ? 'stem' : 'stemmen'}</div></div>`).join('')
+        : `<p class="desc">${runoff.phase === 'closed' ? 'Geen stemmen uitgebracht voor plek drie.' : 'Er zijn nog geen stemmen uitgebracht.'}</p>`;
+      $('#runoff-winner').textContent = runoff.winner ? `Derde kamerlid: ${runoff.winner.name}` : '';
+      $('#runoff-state').textContent = `Start: ${new Date(runoff.opensAt).toLocaleString('nl-NL')} · einde: ${new Date(runoff.closesAt).toLocaleString('nl-NL')}`;
+    }
   }
   async function loadDashboard() {
     const data = await api('/api/admin/data');
@@ -83,6 +103,16 @@
       showMessage('#schedule-message', data.message);
       await loadDashboard();
     } catch (error) { showMessage('#schedule-message', error.message, true); }
+  });
+  $('#save-runoff-schedule').addEventListener('click', async () => {
+    const opensValue = $('#runoff-opens').value;
+    const closesValue = $('#runoff-closes').value;
+    if (!opensValue || !closesValue) return showMessage('#runoff-message', 'Vul zowel start- als eindtijd in.', true);
+    try {
+      const data = await api('/api/admin/runoff-schedule', {method:'PUT', body:JSON.stringify({opensAt:new Date(opensValue).toISOString(), closesAt:new Date(closesValue).toISOString()})});
+      showMessage('#runoff-message', data.message);
+      await loadDashboard();
+    } catch (error) { showMessage('#runoff-message', error.message, true); }
   });
   $('#save-players').addEventListener('click', async () => {
     const names = $('#players').value.split(/\r?\n/).map(name => name.trim()).filter(Boolean);

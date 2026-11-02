@@ -218,7 +218,7 @@ async function getResults(electionId) {
 		ORDER BY votes DESC, c.name ASC`;
 }
 
-async function getRunoffContext(election, mainResults) {
+async function getRunoffContext(election, mainResults, { includeLiveResults = false } = {}) {
 	if (!election.resultsVisible) return null;
 	let [runoff] = await sql`SELECT * FROM election_runoffs WHERE election_id = ${election.id}`;
 	if (!runoff && mainResults.filter(candidate => candidate.votes > 0).length < 3 && mainResults.length >= 3) {
@@ -241,14 +241,14 @@ async function getRunoffContext(election, mainResults) {
 	const candidates = await sql`SELECT id, name, party FROM candidates
 		WHERE active = TRUE AND id NOT IN (${runoff.first_place_candidate_id}, ${runoff.second_place_candidate_id})
 		ORDER BY name ASC`;
-	const results = phase === 'closed' ? await sql`SELECT c.id, c.name, c.party, COUNT(rv.id)::int AS votes
+	const results = phase === 'closed' || includeLiveResults ? await sql`SELECT c.id, c.name, c.party, COUNT(rv.id)::int AS votes
 		FROM candidates c LEFT JOIN runoff_votes rv
 			ON rv.candidate_id = c.id AND rv.election_id = ${election.id}
 		WHERE c.id NOT IN (${runoff.first_place_candidate_id}, ${runoff.second_place_candidate_id})
 		GROUP BY c.id ORDER BY votes DESC, c.name ASC` : [];
 	const [first] = await sql`SELECT id, name, party FROM candidates WHERE id = ${runoff.first_place_candidate_id}`;
 	const [second] = await sql`SELECT id, name, party FROM candidates WHERE id = ${runoff.second_place_candidate_id}`;
-	const [total] = phase === 'closed' ? await sql`SELECT COUNT(*)::int AS total FROM runoff_votes WHERE election_id = ${election.id}` : [{ total: 0 }];
+	const [total] = phase === 'closed' || includeLiveResults ? await sql`SELECT COUNT(*)::int AS total FROM runoff_votes WHERE election_id = ${election.id}` : [{ total: 0 }];
 	return {
 		phase,
 		opensAt: opensAt.toISOString(),
@@ -347,10 +347,35 @@ app.get('/api/admin/data', requireAdmin, async (_req, res) => {
 			getResults(election.id)
 		]);
 		const [totals] = await sql`SELECT COUNT(*)::int AS total FROM votes WHERE election_id = ${election.id}`;
-		res.json({ players, candidates, results, total: totals.total, election });
+		const runoff = await getRunoffContext({ ...election, resultsVisible: election.resultsVisible }, results, { includeLiveResults: true });
+		res.json({ players, candidates, results, total: totals.total, election: { ...election, runoff } });
 	} catch (error) {
 		console.error('Beheerdersgegevens ophalen mislukt:', error);
 		res.status(500).json({ error: 'Beheerdersgegevens konden niet worden opgehaald.' });
+	}
+});
+
+app.put('/api/admin/runoff-schedule', requireAdmin, async (req, res) => {
+	const opensAt = new Date(req.body?.opensAt);
+	const closesAt = new Date(req.body?.closesAt);
+	if (!Number.isFinite(opensAt.getTime()) || !Number.isFinite(closesAt.getTime()) || closesAt <= opensAt) {
+		return res.status(400).json({ error: 'Vul een geldige start- en eindtijd in; de eindtijd moet na de starttijd liggen.' });
+	}
+	if (closesAt.getTime() - opensAt.getTime() > 7 * DAY_MS) {
+		return res.status(400).json({ error: 'De extra stemming mag maximaal zeven dagen duren.' });
+	}
+	try {
+		const election = await getElectionContext();
+		if (!election.resultsVisible) return res.status(409).json({ error: 'De eerste verkiezingsuitslag is nog niet bekend.' });
+		const mainResults = await getResults(election.id);
+		const runoff = await getRunoffContext({ ...election, resultsVisible: true }, mainResults, { includeLiveResults: true });
+		if (!runoff) return res.status(404).json({ error: 'Er is voor deze verkiezing geen extra stemming voor plek drie.' });
+		await sql`UPDATE election_runoffs SET opens_at = ${opensAt.toISOString()}, closes_at = ${closesAt.toISOString()}
+			WHERE election_id = ${election.id}`;
+		res.json({ message: 'Start- en eindtijd van de extra stemming opgeslagen.' });
+	} catch (error) {
+		console.error('Tijden extra stemming opslaan mislukt:', error);
+		res.status(500).json({ error: 'De tijden konden niet worden opgeslagen.' });
 	}
 });
 
