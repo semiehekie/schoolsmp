@@ -92,10 +92,13 @@
       if (runoff.phase === 'open') {
         document.querySelector('#runoff-summary').textContent = `De eerste twee plekken staan vast: ${firstTwo}. Iedereen mag opnieuw stemmen voor de derde plek; deze extra stemming sluit ${new Date(runoff.closesAt).toLocaleString('nl-NL', dateOptions)}.`;
         document.querySelector('#runoff-results').innerHTML = runoff.candidates.map(item => `<span class="chamber-pill">Kandidaat: ${escapeHtml(item.name)}</span>`).join('');
+      } else if (runoff.phase === 'scheduled') {
+        document.querySelector('#runoff-summary').textContent = `🔒 De eerste twee plekken staan vast: ${firstTwo}. De derde plek is nog niet beslist. De extra stemming opent ${new Date(runoff.opensAt).toLocaleString('nl-NL', dateOptions)} en duurt één uur; iedereen mag dan stemmen.`;
+        document.querySelector('#runoff-results').innerHTML = runoff.candidates.map(item => `<span class="chamber-pill">🔒 ${escapeHtml(item.name)}</span>`).join('');
       } else if (runoff.phase === 'closed') {
         document.querySelector('#runoff-summary').textContent = runoff.winner
           ? `${firstTwo} blijven staan. ${escapeHtml(runoff.winner.name)} heeft de extra stemming voor plek drie gewonnen.`
-          : `De eerste twee plekken (${firstTwo}) blijven staan. Er is niet gestemd voor de derde plek, dus die blijft open.`;
+          : `🔒 De eerste twee plekken (${firstTwo}) blijven staan. Er is niet gestemd voor de derde plek; die blijft voorlopig vacant.`;
         document.querySelector('#runoff-results').innerHTML = runoff.results.map(item => `<span class="chamber-pill">${escapeHtml(item.name)} · ${item.votes} ${item.votes === 1 ? 'stem' : 'stemmen'}</span>`).join('');
       }
     }
@@ -103,7 +106,10 @@
     const status = document.querySelector('#election-status');
     const electionAt = new Date(data.election.electionAt);
     const opensAt = new Date(data.election.opensAt);
-    if (data.election.runoff?.phase === 'open') {
+    if (data.election.runoff?.phase === 'scheduled') {
+      status.textContent = `🔒 Er komt eerst nog een extra stemming voor de derde plek. Die opent ${new Date(data.election.runoff.opensAt).toLocaleString('nl-NL', dateOptions)} en sluit ${new Date(data.election.runoff.closesAt).toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'})}. De volgende gewone verkiezing is later.`;
+      status.classList.remove('open');
+    } else if (data.election.runoff?.phase === 'open') {
       status.textContent = `Extra stemming voor de derde plek is open tot ${new Date(data.election.runoff.closesAt).toLocaleString('nl-NL', dateOptions)}. De eerste twee blijven staan; iedereen mag opnieuw stemmen.`;
       status.classList.add('open');
     } else if (data.election.phase === 'open') {
@@ -115,6 +121,9 @@
       status.textContent = data.election.type === 'special'
         ? `De eerste stemronde start ${opensAt.toLocaleString('nl-NL', dateOptions)} en duurt één uur. Meedoen is vrijwillig.`
         : `De stemming start zaterdag om 00:00; de uitslag is zondag om 20:00 bekend. Meedoen is vrijwillig.`;
+      status.classList.remove('open');
+    } else if (data.election.runoff?.phase === 'closed' && !data.election.runoff.winner) {
+      status.textContent = '🔒 De extra stemming voor plek drie is gesloten zonder stemmen. De derde plek is vacant; de eerstvolgende gewone verkiezing staat gepland voor later.';
       status.classList.remove('open');
     } else if (!data.resultsVisible) {
       status.textContent = `De stemming is gesloten. De uitslag wordt zondag om 20:00 bekendgemaakt.`;
@@ -148,8 +157,10 @@
       if (data.players.some(player => String(player.id) === selectedPlayer)) playerSelect.value = selectedPlayer;
       document.querySelector('#voter-list').innerHTML = data.players.length ? data.players.map(player => `<span class="voter-chip">${escapeHtml(player.name)}</span>`).join('') : '<span class="voter-chip">Nog geen spelers toegevoegd</span>';
       const runoffOpen = data.election.runoff?.phase === 'open';
-      const ballotCandidates = runoffOpen ? data.election.runoff.candidates : data.candidates;
-      document.querySelector('#candidates').innerHTML = ballotCandidates.length ? ballotCandidates.map(item => `<label class="candidate"><input type="radio" name="candidate" value="${item.id}" required><span><span class="candidate-name">${escapeHtml(item.name)}</span><span class="candidate-party">${escapeHtml(item.party || (runoffOpen ? 'Stemming voor plek drie' : 'Onafhankelijk'))}</span></span></label>`).join('') : '<div class="candidate-empty">Er zijn geen kandidaten beschikbaar.</div>';
+      const runoffWaiting = data.election.runoff?.phase === 'scheduled';
+      const runoffStage = runoffOpen || runoffWaiting;
+      const ballotCandidates = runoffStage ? data.election.runoff.candidates : data.candidates;
+      document.querySelector('#candidates').innerHTML = ballotCandidates.length ? ballotCandidates.map(item => `<label class="candidate"><input type="radio" name="candidate" value="${item.id}" ${runoffWaiting ? 'disabled' : ''} required><span><span class="candidate-name">${runoffWaiting ? '🔒 ' : ''}${escapeHtml(item.name)}</span><span class="candidate-party">${escapeHtml(item.party || (runoffStage ? 'Stemming voor plek drie' : 'Onafhankelijk'))}</span></span></label>`).join('') : '<div class="candidate-empty">Er zijn geen kandidaten beschikbaar.</div>';
       document.querySelector('#candidates').dataset.ballotType = runoffOpen ? 'runoff' : 'main';
       renderResults(data);
     } catch (error) {
