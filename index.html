@@ -31,6 +31,7 @@
       </section>
       <section class="card results-card"><div class="results-title"><div><h2>De uitslag</h2><p class="card-sub">De winnaar en kamer worden op het aankondigingsmoment bekend.</p></div><span class="total" id="total">Nog niet bekend</span></div>
         <div id="results" class="result-list"><div class="no-results">Resultaten laden…</div></div>
+        <div id="runoff-panel" class="chamber" hidden><div class="chamber-head"><span class="chamber-icon">♜</span> Extra stemming voor plek drie</div><p id="runoff-summary"></p><div id="runoff-results" class="chamber-names"></div></div>
         <div class="chamber"><div class="chamber-head"><span class="chamber-icon">♜</span> De kamer van drie</div><p>De top 3 vormen de schoolsmp-kamer en bepalen samen de straffen op de server.</p><div id="top-three" class="chamber-names"><span class="chamber-pill">De uitslag verschijnt hier</span></div></div>
         <div id="refresh" class="refresh">Resultaten laden…</div>
       </section>
@@ -67,6 +68,8 @@
 
   function renderResults(data) {
     const results = document.querySelector('#results');
+    const runoff = data.election.runoff;
+    const dateOptions = {dateStyle:'medium', timeStyle:'short'};
     const maxVotes = Math.max(1, ...data.results.map(item => item.votes));
     document.querySelector('#total').textContent = data.resultsVisible ? `${data.total} ${data.total === 1 ? 'stem' : 'stemmen'}` : 'Nog niet bekend';
     if (!data.resultsVisible) {
@@ -80,14 +83,30 @@
       results.innerHTML = data.results.map((item, index) => `<div class="result-row"><div class="rank ${index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : ''}">${String(index + 1).padStart(2, '0')}</div><div class="result-info"><div class="result-name">${escapeHtml(item.name)}</div><div class="result-party">${escapeHtml(item.party || 'Onafhankelijk')}</div><div class="bar"><div class="bar-fill" style="width:${Math.max(3, item.votes / maxVotes * 100)}%"></div></div></div><div class="vote-count">${item.votes} ${item.votes === 1 ? 'stem' : 'stemmen'}</div></div>`).join('');
     }
     const topThree = document.querySelector('#top-three');
-    const leaders = data.resultsVisible ? data.topThree.filter(item => item.votes > 0) : [];
+    const leaders = data.resultsVisible ? data.topThree : [];
     topThree.innerHTML = leaders.length ? leaders.map(item => `<span class="chamber-pill">♜ ${escapeHtml(item.name)}</span>`).join('') : '<span class="chamber-pill">De uitslag verschijnt hier</span>';
+    const runoffPanel = document.querySelector('#runoff-panel');
+    runoffPanel.hidden = !runoff;
+    if (runoff) {
+      const firstTwo = runoff.firstTwo.map(item => escapeHtml(item.name)).join(' en ');
+      if (runoff.phase === 'open') {
+        document.querySelector('#runoff-summary').textContent = `De eerste twee plekken staan vast: ${firstTwo}. Iedereen mag opnieuw stemmen voor de derde plek; deze extra stemming sluit ${new Date(runoff.closesAt).toLocaleString('nl-NL', dateOptions)}.`;
+        document.querySelector('#runoff-results').innerHTML = runoff.candidates.map(item => `<span class="chamber-pill">Kandidaat: ${escapeHtml(item.name)}</span>`).join('');
+      } else if (runoff.phase === 'closed') {
+        document.querySelector('#runoff-summary').textContent = runoff.winner
+          ? `${firstTwo} blijven staan. ${escapeHtml(runoff.winner.name)} heeft de extra stemming voor plek drie gewonnen.`
+          : `De eerste twee plekken (${firstTwo}) blijven staan. Er is niet gestemd voor de derde plek, dus die blijft open.`;
+        document.querySelector('#runoff-results').innerHTML = runoff.results.map(item => `<span class="chamber-pill">${escapeHtml(item.name)} · ${item.votes} ${item.votes === 1 ? 'stem' : 'stemmen'}</span>`).join('');
+      }
+    }
     document.querySelector('#refresh').textContent = `Bijgewerkt om ${new Date().toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'})}`;
     const status = document.querySelector('#election-status');
     const electionAt = new Date(data.election.electionAt);
     const opensAt = new Date(data.election.opensAt);
-    const dateOptions = {dateStyle:'medium', timeStyle:'short'};
-    if (data.election.phase === 'open') {
+    if (data.election.runoff?.phase === 'open') {
+      status.textContent = `Extra stemming voor de derde plek is open tot ${new Date(data.election.runoff.closesAt).toLocaleString('nl-NL', dateOptions)}. De eerste twee blijven staan; iedereen mag opnieuw stemmen.`;
+      status.classList.add('open');
+    } else if (data.election.phase === 'open') {
       status.textContent = data.election.type === 'special'
         ? `De eerste stemronde is open tot ${electionAt.toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'})}. De uitslag wordt daarna bekend. Stemmen is vrijwillig.`
         : `Stemmen is zaterdag open tot 23:59. De uitslag wordt zondag om 20:00 bekendgemaakt. Stemmen is vrijwillig; je hoeft niet mee te doen.`;
@@ -107,8 +126,15 @@
         : `Deze stemronde is gesloten. Stemmen is altijd vrijwillig.`;
       status.classList.remove('open');
     }
-    votingOpen = data.election.phase === 'open';
+    votingOpen = data.election.phase === 'open' || data.election.runoff?.phase === 'open';
     submitButton.disabled = !votingOpen;
+    if (data.election.runoff?.phase === 'open') {
+      document.querySelector('.card-head .card-sub').textContent = 'De eerste twee plaatsen staan vast. Stem opnieuw voor de derde plek.';
+      document.querySelector('.card-head .step').textContent = '02 — DERDE PLEK';
+    } else {
+      document.querySelector('.card-head .card-sub').textContent = 'Eén stem per speler. Jouw keuze telt.';
+      document.querySelector('.card-head .step').textContent = '01 — STEMMEN';
+    }
   }
 
   async function loadData() {
@@ -121,7 +147,10 @@
       playerSelect.innerHTML = '<option value="">Kies je Minecraft-naam</option>' + data.players.map(player => `<option value="${player.id}">${escapeHtml(player.name)}</option>`).join('');
       if (data.players.some(player => String(player.id) === selectedPlayer)) playerSelect.value = selectedPlayer;
       document.querySelector('#voter-list').innerHTML = data.players.length ? data.players.map(player => `<span class="voter-chip">${escapeHtml(player.name)}</span>`).join('') : '<span class="voter-chip">Nog geen spelers toegevoegd</span>';
-      document.querySelector('#candidates').innerHTML = data.candidates.length ? data.candidates.map(item => `<label class="candidate"><input type="radio" name="candidate" value="${item.id}" required><span><span class="candidate-name">${escapeHtml(item.name)}</span><span class="candidate-party">${escapeHtml(item.party || 'Onafhankelijk')}</span></span></label>`).join('') : '<div class="candidate-empty">De beheerder heeft nog geen kandidaten toegevoegd.</div>';
+      const runoffOpen = data.election.runoff?.phase === 'open';
+      const ballotCandidates = runoffOpen ? data.election.runoff.candidates : data.candidates;
+      document.querySelector('#candidates').innerHTML = ballotCandidates.length ? ballotCandidates.map(item => `<label class="candidate"><input type="radio" name="candidate" value="${item.id}" required><span><span class="candidate-name">${escapeHtml(item.name)}</span><span class="candidate-party">${escapeHtml(item.party || (runoffOpen ? 'Stemming voor plek drie' : 'Onafhankelijk'))}</span></span></label>`).join('') : '<div class="candidate-empty">Er zijn geen kandidaten beschikbaar.</div>';
+      document.querySelector('#candidates').dataset.ballotType = runoffOpen ? 'runoff' : 'main';
       renderResults(data);
     } catch (error) {
       document.querySelector('#refresh').textContent = error.message;
@@ -136,7 +165,7 @@
     submitButton.disabled = true;
     submitButton.textContent = 'Stem wordt opgeslagen…';
     try {
-      const response = await fetch('/api/vote', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({playerId:Number(document.querySelector('#player').value), candidateId:Number(candidate.value)})});
+      const response = await fetch('/api/vote', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({playerId:Number(document.querySelector('#player').value), candidateId:Number(candidate.value), ballotType:document.querySelector('#candidates').dataset.ballotType || 'main'})});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Stemmen is niet gelukt.');
       message.textContent = data.message;

@@ -68,6 +68,22 @@ async function initializeDatabase() {
 		candidate_id INTEGER NOT NULL REFERENCES candidates(id),
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	)`;
+	await sql`CREATE TABLE IF NOT EXISTS election_runoffs (
+		election_id INTEGER PRIMARY KEY REFERENCES elections(id),
+		first_place_candidate_id INTEGER NOT NULL REFERENCES candidates(id),
+		second_place_candidate_id INTEGER NOT NULL REFERENCES candidates(id),
+		opens_at TIMESTAMPTZ NOT NULL,
+		closes_at TIMESTAMPTZ NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	)`;
+	await sql`CREATE TABLE IF NOT EXISTS runoff_votes (
+		id SERIAL PRIMARY KEY,
+		election_id INTEGER NOT NULL REFERENCES elections(id),
+		player_id INTEGER NOT NULL REFERENCES players(id),
+		candidate_id INTEGER NOT NULL REFERENCES candidates(id),
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		UNIQUE (election_id, player_id)
+	)`;
 	await sql`ALTER TABLE votes ADD COLUMN IF NOT EXISTS election_id INTEGER REFERENCES elections(id)`;
 	await sql`INSERT INTO elections (election_at) VALUES ('1970-01-01T00:00:00Z') ON CONFLICT (election_at) DO NOTHING`;
 	await sql`UPDATE votes SET election_id = (SELECT id FROM elections WHERE election_at = '1970-01-01T00:00:00Z') WHERE election_id IS NULL`;
@@ -202,6 +218,49 @@ async function getResults(electionId) {
 		ORDER BY votes DESC, c.name ASC`;
 }
 
+async function getRunoffContext(election, mainResults) {
+	if (!election.resultsVisible) return null;
+	let [runoff] = await sql`SELECT * FROM election_runoffs WHERE election_id = ${election.id}`;
+	if (!runoff && mainResults.filter(candidate => candidate.votes > 0).length < 3 && mainResults.length >= 3) {
+		const opensAt = new Date(election.announcementAt);
+		const closesAt = new Date(opensAt.getTime() + DAY_MS);
+		const firstPlaceId = mainResults[0].id;
+		const secondPlaceId = mainResults[1].id;
+		[runoff] = await sql`INSERT INTO election_runoffs
+			(election_id, first_place_candidate_id, second_place_candidate_id, opens_at, closes_at)
+			VALUES (${election.id}, ${firstPlaceId}, ${secondPlaceId}, ${opensAt.toISOString()}, ${closesAt.toISOString()})
+			ON CONFLICT (election_id) DO NOTHING RETURNING *`;
+		if (!runoff) [runoff] = await sql`SELECT * FROM election_runoffs WHERE election_id = ${election.id}`;
+	}
+	if (!runoff) return null;
+
+	const now = Date.now();
+	const opensAt = new Date(runoff.opens_at);
+	const closesAt = new Date(runoff.closes_at);
+	const phase = now < opensAt.getTime() ? 'scheduled' : now < closesAt.getTime() ? 'open' : 'closed';
+	const candidates = await sql`SELECT id, name, party FROM candidates
+		WHERE active = TRUE AND id NOT IN (${runoff.first_place_candidate_id}, ${runoff.second_place_candidate_id})
+		ORDER BY name ASC`;
+	const results = phase === 'closed' ? await sql`SELECT c.id, c.name, c.party, COUNT(rv.id)::int AS votes
+		FROM candidates c LEFT JOIN runoff_votes rv
+			ON rv.candidate_id = c.id AND rv.election_id = ${election.id}
+		WHERE c.id NOT IN (${runoff.first_place_candidate_id}, ${runoff.second_place_candidate_id})
+		GROUP BY c.id ORDER BY votes DESC, c.name ASC` : [];
+	const [first] = await sql`SELECT id, name, party FROM candidates WHERE id = ${runoff.first_place_candidate_id}`;
+	const [second] = await sql`SELECT id, name, party FROM candidates WHERE id = ${runoff.second_place_candidate_id}`;
+	const [total] = phase === 'closed' ? await sql`SELECT COUNT(*)::int AS total FROM runoff_votes WHERE election_id = ${election.id}` : [{ total: 0 }];
+	return {
+		phase,
+		opensAt: opensAt.toISOString(),
+		closesAt: closesAt.toISOString(),
+		firstTwo: [first, second].filter(Boolean),
+		candidates,
+		results,
+		total: total.total,
+		winner: phase === 'closed' && total.total > 0 ? results[0] || null : null
+	};
+}
+
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
 app.get('/api/public', async (_req, res) => {
@@ -213,8 +272,12 @@ app.get('/api/public', async (_req, res) => {
 			sql`SELECT id, name, party FROM candidates WHERE active = TRUE ORDER BY name ASC`,
 			resultsVisible ? getResults(election.id) : Promise.resolve([])
 		]);
+		const runoff = await getRunoffContext({ ...election, resultsVisible }, results);
 		const [totals] = resultsVisible ? await sql`SELECT COUNT(*)::int AS total FROM votes WHERE election_id = ${election.id}` : [{ total: 0 }];
-		res.json({ players, candidates, results, total: totals.total, topThree: results.slice(0, 3), resultsVisible, election });
+		const topThree = runoff?.firstTwo
+			? [...runoff.firstTwo, ...(runoff.winner ? [runoff.winner] : [])]
+			: results.slice(0, 3);
+		res.json({ players, candidates, results, total: totals.total, topThree, resultsVisible, election: { ...election, runoff } });
 	} catch (error) {
 		console.error('Publieke gegevens ophalen mislukt:', error);
 		res.status(500).json({ error: 'De gegevens konden niet worden opgehaald.' });
@@ -222,16 +285,30 @@ app.get('/api/public', async (_req, res) => {
 });
 
 app.post('/api/vote', async (req, res) => {
-	const { playerId, candidateId } = req.body || {};
+	const { playerId, candidateId, ballotType = 'main' } = req.body || {};
 	if (!Number.isInteger(Number(playerId)) || !Number.isInteger(Number(candidateId))) {
 		return res.status(400).json({ error: 'Kies je naam en een kandidaat.' });
 	}
+	if (ballotType !== 'main' && ballotType !== 'runoff') return res.status(400).json({ error: 'Onbekende stemronde.' });
 
 	try {
 		const election = await getElectionContext();
-		if (election.phase !== 'open') return res.status(403).json({ error: election.phase === 'scheduled' ? 'De stemronde is nog niet geopend.' : 'Deze verkiezingsronde is gesloten.' });
 		const player = Number(playerId);
 		const candidate = Number(candidateId);
+		if (ballotType === 'runoff') {
+			if (!election.resultsVisible) return res.status(403).json({ error: 'De extra stemming is nog niet geopend.' });
+			const mainResults = await getResults(election.id);
+			const runoff = await getRunoffContext({ ...election, resultsVisible: true }, mainResults);
+			if (!runoff || runoff.phase !== 'open') return res.status(403).json({ error: 'De extra stemming voor de derde plek is niet open.' });
+			if (!runoff.candidates.some(item => item.id === candidate)) return res.status(400).json({ error: 'Kies een kandidaat die meedoet aan de extra stemming.' });
+			const [eligible] = await sql`SELECT id FROM players WHERE id = ${player} AND active = TRUE`;
+			if (!eligible) return res.status(400).json({ error: 'Deze spelersnaam is niet beschikbaar.' });
+			const insertedRunoff = await sql`INSERT INTO runoff_votes (election_id, player_id, candidate_id)
+				VALUES (${election.id}, ${player}, ${candidate}) ON CONFLICT (election_id, player_id) DO NOTHING RETURNING id`;
+			if (!insertedRunoff.length) return res.status(409).json({ error: 'Met deze naam is al gestemd voor de derde plek.' });
+			return res.json({ message: 'Je stem voor de derde plek is opgeslagen.' });
+		}
+		if (election.phase !== 'open') return res.status(403).json({ error: election.phase === 'scheduled' ? 'De stemronde is nog niet geopend.' : 'Deze verkiezingsronde is gesloten.' });
 		const [existingVote] = await sql`SELECT id FROM votes WHERE player_id = ${player} AND election_id = ${election.id}`;
 		if (existingVote) return res.status(409).json({ error: 'Met deze naam is al gestemd.' });
 

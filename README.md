@@ -23,7 +23,7 @@ Bij de eerste start maakt de server automatisch de benodigde tabellen in je Neon
 
 De startpagina toont ook de servergrondregels, strafniveaus en de ingediende partijpunten. Extra regels mogen de grondregels aanscherpen of aanvullen, niet versoepelen.
 
-De publieke pagina ververst de uitslag automatisch. Stemmen is vrijwillig: een ronde sluit op de geplande tijd, ook als niet iedereen heeft gestemd. Per naam kan maximaal één stem per ronde worden uitgebracht. Let op: zonder code of accountverificatie kan de site niet controleren wie een Minecraft-naam bezit. Oude stemmen blijven bewaard als een speler of kandidaat uit de actieve lijst wordt gehaald.
+De publieke pagina ververst de uitslag automatisch. Stemmen is vrijwillig: een ronde sluit op de geplande tijd, ook als niet iedereen heeft gestemd. Per naam kan maximaal één stem per gewone ronde worden uitgebracht. Als bij de uitslag minder dan drie kandidaten stemmen hebben, volgt direct een aparte stemming van 24 uur voor plek drie. De eerste twee plekken blijven vaststaan en iedereen kan opnieuw stemmen, ook wie al in de gewone ronde heeft gestemd. Runoff-stemmen worden in aparte nieuwe tabellen opgeslagen; oude stemrecords blijven onaangepast in de database. Let op: zonder code of accountverificatie kan de site niet controleren wie een Minecraft-naam bezit. Oude stemmen blijven bewaard als een speler of kandidaat uit de actieve lijst wordt gehaald.
 
 ## Belangrijk
 
