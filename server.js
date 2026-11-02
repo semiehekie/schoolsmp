@@ -262,6 +262,7 @@ async function getRunoffContext(election, mainResults, { includeLiveResults = fa
 }
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/minister', (_req, res) => res.sendFile(path.join(__dirname, 'minister.html')));
 
 app.get('/api/public', async (_req, res) => {
 	try {
