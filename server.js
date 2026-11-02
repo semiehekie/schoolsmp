@@ -223,7 +223,7 @@ async function getRunoffContext(election, mainResults) {
 	let [runoff] = await sql`SELECT * FROM election_runoffs WHERE election_id = ${election.id}`;
 	if (!runoff && mainResults.filter(candidate => candidate.votes > 0).length < 3 && mainResults.length >= 3) {
 		const opensAt = new Date(election.announcementAt);
-		const closesAt = new Date(opensAt.getTime() + DAY_MS);
+		const closesAt = new Date(opensAt.getTime() + 60 * 60 * 1000);
 		const firstPlaceId = mainResults[0].id;
 		const secondPlaceId = mainResults[1].id;
 		[runoff] = await sql`INSERT INTO election_runoffs
