@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#101813"><title>Beheer — schoolsmp</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+    :root{color-scheme:dark;--bg:#101813;--panel:#19231d;--line:#35443a;--text:#f1f5ee;--muted:#a4b2a7;--green:#a6e56f;--red:#ff8e83}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 86% 0%,#263d2e 0,transparent 34%),var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}.shell{width:min(980px,calc(100% - 36px));margin:auto}.top{height:78px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between}.brand{font:700 17px 'Space Grotesk',sans-serif;display:flex;align-items:center;gap:10px}.mark{width:34px;height:34px;border-radius:11px;background:var(--green);color:#152118;display:grid;place-items:center}.top a{color:var(--muted);text-decoration:none;font-size:13px}.intro{padding:42px 0 25px}.eyebrow{color:var(--green);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.intro h1{font:700 38px 'Space Grotesk',sans-serif;letter-spacing:-1.5px;margin:10px 0}.intro p{color:var(--muted);margin:0;font-size:14px}.card{background:linear-gradient(145deg,#1d2921,#18211b);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}.card h2{font:600 19px 'Space Grotesk',sans-serif;margin:0}.desc{font-size:13px;color:var(--muted);margin:7px 0 18px;line-height:1.5}label{display:block;font-weight:600;font-size:13px;margin:14px 0 8px}input,textarea{width:100%;background:#121a15;border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;padding:12px;outline:none}input:focus,textarea:focus{border-color:var(--green)}input{height:45px}textarea{min-height:120px;resize:vertical;line-height:1.6}button{background:var(--green);color:#172319;border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer;font:600 13px 'DM Sans',sans-serif}button:hover{filter:brightness(1.07)}button:disabled{opacity:.55;cursor:wait}.secondary{background:#26332a;color:var(--text);border:1px solid var(--line)}.danger{background:#ff8e8317;color:#ffc1ba;border:1px solid #ff8e8342}.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:13px}.notice{font-size:12px;margin:11px 0 0;color:var(--muted);min-height:17px}.notice.error{color:#ffaaa1}.notice.ok{color:#bce997}.login-card{max-width:440px;margin:35px auto}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.candidate-edit{display:grid;grid-template-columns:1.1fr 1fr auto;gap:8px;align-items:center;margin-bottom:9px}.candidate-edit input{min-width:0}.candidate-edit button{height:42px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px}.stat{background:#ffffff08;border:1px solid #ffffff10;border-radius:11px;padding:14px}.stat-num{font:700 25px 'Space Grotesk',sans-serif;color:var(--green)}.stat-label{font-size:11px;color:var(--muted);margin-top:4px}.code-list{background:#111912;border:1px solid var(--line);padding:14px;border-radius:10px;margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}.code{background:#202d23;border:1px solid #344838;color:#c9f3ac;border-radius:7px;padding:8px;font:600 12px ui-monospace,monospace;text-align:center;letter-spacing:1px}.results{display:grid;gap:8px}.result{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:#111912;border:1px solid #ffffff0d;border-radius:9px;padding:11px}.num{color:var(--green);font-weight:700}.result-name{font-weight:600;font-size:13px}.party{font-size:11px;color:var(--muted);margin-top:3px}.votes{font-size:13px;font-weight:700}.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.candidate-edit{grid-template-columns:1fr 1fr}.candidate-edit button{grid-column:span 2}.card{padding:19px}.intro h1{font-size:32px}}
+  </style>
+</head>
+<body><div class="shell">
+  <header class="top"><div class="brand"><div class="mark">✦</div> schoolsmp <span style="color:var(--muted);font-weight:500">/ beheer</span></div><a href="/">← Terug naar stemmen</a></header>
+  <section class="intro"><div class="eyebrow">Serverbeheer</div><h1>Verkiezing beheren</h1><p>Beheer de spelers en kandidaten, stel het schema in en houd de uitslag bij.</p></section>
+  <section id="login" class="card login-card"><h2>Beheerder login</h2><p class="desc">Log in met het beheerderswachtwoord uit je .env-bestand.</p><form id="login-form"><label for="password">Wachtwoord</label><input id="password" type="password" autocomplete="current-password" required><div class="actions"><button type="submit">Inloggen →</button><a href="/" style="padding:10px;color:var(--muted);font-size:13px;text-decoration:none">Annuleren</a></div><div id="login-message" class="notice" role="status"></div></form></section>
+  <main id="dashboard" class="hidden">
+    <div class="stats" style="grid-template-columns:minmax(190px,260px)"><div class="stat"><div class="stat-num" id="stat-votes">0</div><div class="stat-label">Uitgebrachte stemmen deze ronde</div></div></div>
+    <section class="card"><h2>Verkiezing om de week</h2><p class="desc">De eerste stemming is eenmalig één uur. Daarna kan er elke twee weken op zaterdag gestemd worden; stemmen sluit om 00:00 in de nacht naar zondag. De uitslag wordt zondag om 20:00 bekendgemaakt. Deelname is vrijwillig.</p><label for="first-election">Eerste stemming opent op</label><input id="first-election" type="datetime-local" style="max-width:320px"><div class="actions"><button id="save-schedule">Schema opslaan</button><span id="schedule-status" class="desc" style="margin:0"></span></div><div id="schedule-message" class="notice" role="status"></div></section>
+    <div class="grid">
+      <section class="card"><h2>Spelerslijst</h2><p class="desc">Eén Minecraft-naam per regel. Alleen deze namen kunnen stemmen.</p><label for="players">Spelers</label><textarea id="players" placeholder="Steve\nAlex\nCreeper123"></textarea><div class="actions"><button id="save-players">Spelers opslaan</button></div><div id="players-message" class="notice" role="status"></div></section>
+      <section class="card"><h2>Kandidaten</h2><p class="desc">Stel hier de kandidaten voor de komende ronde om de week in. Werk deze lijst bij als er nieuwe mensen meedoen; eerdere uitslagen blijven bewaard.</p><div id="candidate-list"></div><div class="actions"><button class="secondary" id="add-candidate">+ Kandidaat toevoegen</button><button id="save-candidates">Kandidaten opslaan</button></div><div id="candidates-message" class="notice" role="status"></div></section>
+    </div>
+    <section class="card"><h2>Uitslag</h2><p class="desc">De top 3 vormen de kamer die de straffen bedenkt.</p><div id="admin-results" class="results"></div><div class="actions"><button id="refresh" class="secondary">Ververs uitslag</button><button id="download">Download CSV</button></div><div id="results-message" class="notice" role="status"></div><p class="note">Stemmen zijn openbaar zichtbaar op de startpagina. Iedere speler kan maximaal één stem per ronde uitbrengen; stemmen is vrijwillig. Het beheerderswachtwoord beschermt deze pagina.</p></section>
+  </main>
+</div>
+<script>
+  let token = '';
+  const $ = selector => document.querySelector(selector);
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  async function api(url, options = {}) {
+    const response = await fetch(url, {...options, headers:{'Content-Type':'application/json', ...(token ? {Authorization:`Bearer ${token}`} : {}), ...(options.headers || {})}});
+    const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
+    if (!response.ok) throw new Error(data?.error || 'Er ging iets mis.');
+    return data;
+  }
+  function showMessage(selector, text, isError = false) { const el = $(selector); el.textContent = text; el.className = `notice ${text ? (isError ? 'error' : 'ok') : ''}`; }
+  function addCandidate(name = '', party = '') {
+    const row = document.createElement('div');
+    row.className = 'candidate-edit';
+    row.innerHTML = `<input class="candidate-name-input" maxlength="60" aria-label="Kandidaatnaam" placeholder="Minecraft-naam" value="${escapeHtml(name)}"><input class="candidate-party-input" maxlength="60" aria-label="Partij" placeholder="Partij of groep" value="${escapeHtml(party)}"><button type="button" class="danger" aria-label="Kandidaat verwijderen">Verwijder</button>`;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    $('#candidate-list').append(row);
+  }
+  function displayResults(data) {
+    $('#stat-votes').textContent = data.total;
+    $('#admin-results').innerHTML = data.results.length ? data.results.map((item, index) => `<div class="result"><div class="num">${String(index + 1).padStart(2, '0')}</div><div><div class="result-name">${escapeHtml(item.name)}</div><div class="party">${escapeHtml(item.party || 'Onafhankelijk')}</div></div><div class="votes">${item.votes} ${item.votes === 1 ? 'stem' : 'stemmen'}</div></div>`).join('') : '<p class="desc">Nog geen kandidaten om te tonen.</p>';
+    const electionDate = new Date(data.election.announcementAt).toLocaleString('nl-NL', {dateStyle:'medium', timeStyle:'short'});
+    const opensDate = new Date(data.election.opensAt).toLocaleString('nl-NL', {dateStyle:'medium', timeStyle:'short'});
+    const closesDate = new Date(data.election.closesAt).toLocaleString('nl-NL', {dateStyle:'medium', timeStyle:'short'});
+    const nextOpensDate = data.election.nextElection ? new Date(data.election.nextElection.opensAt).toLocaleString('nl-NL', {dateStyle:'medium', timeStyle:'short'}) : '';
+    $('#schedule-status').textContent = data.election.phase === 'open'
+      ? `Stemmen open · sluit ${closesDate} · uitslag ${electionDate}`
+      : data.election.phase === 'scheduled'
+        ? `Eerste stemming opent ${opensDate} · sluit ${closesDate}`
+        : !data.election.resultsVisible
+          ? `Stemmen gesloten · uitslag volgt ${electionDate}`
+          : `Uitslag bekend ${electionDate} · volgende stemming opent ${nextOpensDate}`;
+  }
+  async function loadDashboard() {
+    const data = await api('/api/admin/data');
+    const scheduledDate = new Date(data.election.firstElectionAt);
+    $('#first-election').value = new Date(scheduledDate.getTime() - scheduledDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    $('#players').value = data.players.filter(player => player.active).map(player => player.name).join('\n');
+    $('#candidate-list').innerHTML = '';
+    data.candidates.filter(candidate => candidate.active).forEach(candidate => addCandidate(candidate.name, candidate.party));
+    displayResults(data);
+  }
+  $('#login-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    showMessage('#login-message', 'Bezig met inloggen…');
+    try {
+      const data = await api('/api/admin/login', {method:'POST', body:JSON.stringify({password:$('#password').value})});
+      token = data.token;
+      await loadDashboard();
+      $('#login').classList.add('hidden');
+      $('#dashboard').classList.remove('hidden');
+    } catch (error) { showMessage('#login-message', error.message, true); }
+  });
+  $('#add-candidate').addEventListener('click', () => addCandidate());
+  $('#save-schedule').addEventListener('click', async () => {
+    const value = $('#first-election').value;
+    if (!value) return showMessage('#schedule-message', 'Kies een datum en tijd.', true);
+    try {
+      const data = await api('/api/admin/schedule', {method:'PUT', body:JSON.stringify({firstElectionAt:new Date(value).toISOString()})});
+      showMessage('#schedule-message', data.message);
+      await loadDashboard();
+    } catch (error) { showMessage('#schedule-message', error.message, true); }
+  });
+  $('#save-players').addEventListener('click', async () => {
+    const names = $('#players').value.split(/\r?\n/).map(name => name.trim()).filter(Boolean);
+    try { const data = await api('/api/admin/players', {method:'PUT', body:JSON.stringify({names})}); showMessage('#players-message', data.message); }
+    catch (error) { showMessage('#players-message', error.message, true); }
+  });
+  $('#save-candidates').addEventListener('click', async () => {
+    const candidates = [...document.querySelectorAll('.candidate-edit')].map(row => ({name:row.querySelector('.candidate-name-input').value.trim(), party:row.querySelector('.candidate-party-input').value.trim()})).filter(candidate => candidate.name);
+    try { const data = await api('/api/admin/candidates', {method:'PUT', body:JSON.stringify({candidates})}); showMessage('#candidates-message', data.message); await loadDashboard(); }
+    catch (error) { showMessage('#candidates-message', error.message, true); }
+  });
+  $('#refresh').addEventListener('click', async () => {
+    try { await loadDashboard(); showMessage('#results-message', 'Uitslag bijgewerkt.'); }
+    catch (error) { showMessage('#results-message', error.message, true); }
+  });
+  $('#download').addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/admin/results.csv', {headers:{Authorization:`Bearer ${token}`}});
+      if (!response.ok) throw new Error('CSV downloaden is niet gelukt.');
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a'); link.href = url; link.download = 'stemresultaten.csv'; link.click(); URL.revokeObjectURL(url);
+      showMessage('#results-message', 'CSV-bestand gedownload.');
+    } catch (error) { showMessage('#results-message', error.message, true); }
+  });
+</script></body></html>
